@@ -1,0 +1,94 @@
+This is the .TXT file that i would use to go through the MST algorithm,optimization strategy and anomaly detection.
+
+1. MST ALGORITHM:
+We use Kruskal's algorithm for Minimum Spanning Tree computation.
+
+	KRUSKAL STEPS:
+		1.Sort all the edges in a non-decreasing order of their weight. 
+		2.Pick the smallest edge. 
+		3.Check if it forms a cycle with the spanning tree formed so far. 
+		4.If the cycle is not formed, include this edge. Else, discard it.  
+		5.It uses the Disjoint Sets to detect cycles.
+		6.Repeat step 2 until there are (V-1) edges in the spanning tree.
+			Source:geeksforgeeks
+	RESULT: MST edges + total weight displayed in the UI.
+
+
+	UNION-FIND DATA STRUCTURE:
+		Union-Find (DSU) supports Kruskal efficiently:
+
+		  - find(x): Returns the root representative of x's component.
+			Uses PATH COMPRESSION to optimize time complexity to near O(1).
+		  
+		  - union(x, y): Merges the components of x and y.
+			Uses UNION BY RANK → keeps tree shallow.
+
+		Combined time complexity per operation: O(α(N)) ≈ O(1).
+
+----------------------------------------------------------------
+
+3. ANOMALY DETECTION
+	DETECTION LOGIC (function detectAnomaly):
+	  An edge is flagged as CURSED if any of the following apply:
+
+	  Rule 1 — NON-POSITIVE WEIGHT:
+		weight <= 0
+			-Violates the strict positivity constraint.
+			-A Nen connection with zero or negative strength is
+			  physically meaningless in the network model.
+			-This is the PRIMARY cursed edge indicator.
+
+	  Rule 2 — OUT-OF-RANGE WEIGHT:
+		weight > 20
+			-The system defines valid weights as integers in [1, 20].
+			-Any value above 20 is outside the defined range and
+			  may indicate corrupted or injected data.
+
+	  Rule 3 — NON-NUMERIC WEIGHT:
+		isNaN(weight) or typeof weight !== 'number'
+			-Completely invalid data must be treated as cursed.
+
+	CONSEQUENCE:
+	  All edges flagged by detectAnomaly are EXCLUDED from the
+	  MST computation. They are displayed in RED on the graph
+	  with a dashed line and a "CURSED" label in the anomaly
+	  report. Hovering over them in the UI shows "SUSPICION: CURSED"
+	  in the tooltip.
+
+---------------------------------------------------------------------------
+
+4. OPTIMIZATION STRATEGY
+	"Must be: Efficient (no full rebuild if avoidable)"
+
+	Our approach:
+	  - On EVERY graph mutation (add edge, remove edge, update
+		weight), we call recompute() which:
+		  1. Re-runs detectAnomaly (O(E) — trivial)
+		  2. Re-runs computeMST (O(E log E) — trivial for N=13)
+
+	  For N=13, a full MST recompute takes microseconds.
+	  The bottleneck is rendering, not computation.
+
+----------------------------------------------------------------
+
+5. GRAPH OPERATIONS
+	addEdge(graph, edge):
+	  - Validates node IDs are in [1, nodeCount]
+	  - Validates no self-loops
+	  - Checks for duplicate edges (undirected)
+	  - Assigns a unique monotonically increasing edge ID
+	  - Appends to graph.edges[]
+
+	removeEdge(graph, edgeId):
+	  - Looks up edge by ID (O(E))
+	  - Splices it from graph.edges[]
+
+	updateWeight(graph, edgeId, newWeight):
+	  - Looks up edge by ID (O(E))
+	  - Mutates the weight in-place
+	  - No structural rebuild needed
+
+	searchNode(nodeId):
+	  - Filters all edges where from === nodeId OR to === nodeId
+	  - Displays connected edges with MST/cursed status
+

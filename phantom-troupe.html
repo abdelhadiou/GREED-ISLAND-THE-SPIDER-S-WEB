@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Greed Island: The Spider's Web</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Cinzel:wght@400;700;900&display=swap');
+
+  :root {
+    --bg: #0a0a0a;
+    --panel: #0f1410;
+    --border: #1a3a1a;
+    --gold: #c9a84c;
+    --green: #2a7a2a;
+    --green-bright: #4caf50;
+    --green-glow: #00ff4433;
+    --red: #ff3333;
+    --red-dim: #aa1111;
+    --text: #c8d8c8;
+    --text-dim: #5a7a5a;
+    --mst-color: #00ff88;
+    --cursed-color: #ff3333;
+    --normal-color: #3a7a4a;
+    --node-color: #1a4a2a;
+    --node-border: #4caf50;
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-display: 'Cinzel', serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  header {
+    text-align: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #0a1a0a 0%, transparent 100%);
+    position: relative;
+  }
+
+  header h1 {
+    font-family: var(--font-display);
+    font-size: 1.8em;
+    color: var(--gold);
+    letter-spacing: 4px;
+    text-shadow: 0 0 20px var(--gold), 0 0 40px #8a6020;
+  }
+
+  header p {
+    color: var(--text-dim);
+    font-size: 0.75em;
+    letter-spacing: 2px;
+    margin-top: 4px;
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    grid-template-rows: 1fr auto;
+    height: calc(100vh - 80px);
+    gap: 0;
+  }
+
+  .canvas-container {
+    position: relative;
+    background: radial-gradient(ellipse at center, #0d1f0d 0%, #050a05 100%);
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  canvas {
+    display: block;
+    cursor: crosshair;
+  }
+
+  .canvas-hint {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--text-dim);
+    font-size: 0.65em;
+    letter-spacing: 1px;
+    pointer-events: none;
+  }
+
+  .side-panel {
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    overflow-y: auto;
+    border-left: 1px solid var(--border);
+  }
+
+  .panel-section {
+    border-bottom: 1px solid var(--border);
+    padding: 14px;
+  }
+
+  .panel-section h3 {
+    font-family: var(--font-display);
+    font-size: 0.65em;
+    letter-spacing: 3px;
+    color: var(--gold);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 6px;
+    align-items: center;
+  }
+
+  .form-row label {
+    font-size: 0.65em;
+    color: var(--text-dim);
+    width: 55px;
+    flex-shrink: 0;
+  }
+
+  input[type="number"], input[type="text"], select {
+    background: #0a100a;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.75em;
+    padding: 5px 8px;
+    flex: 1;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="number"]:focus, input[type="text"]:focus, select:focus {
+    border-color: var(--green-bright);
+    box-shadow: 0 0 8px var(--green-glow);
+  }
+
+  .btn {
+    background: transparent;
+    border: 1px solid var(--green);
+    color: var(--green-bright);
+    font-family: var(--font-mono);
+    font-size: 0.7em;
+    padding: 6px 10px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    width: 100%;
+    margin-top: 4px;
+  }
+
+  .btn:hover {
+    background: var(--green-glow);
+    border-color: var(--green-bright);
+    box-shadow: 0 0 10px var(--green-glow);
+  }
+
+  .btn.danger {
+    border-color: var(--red-dim);
+    color: var(--red);
+  }
+
+  .btn.danger:hover {
+    background: rgba(255,0,0,0.1);
+    box-shadow: 0 0 10px rgba(255,0,0,0.2);
+  }
+
+  .btn.gold {
+    border-color: #8a6020;
+    color: var(--gold);
+  }
+
+  .btn.gold:hover {
+    background: rgba(201,168,76,0.1);
+    box-shadow: 0 0 10px rgba(201,168,76,0.2);
+  }
+
+  .mst-info {
+    font-size: 0.7em;
+    line-height: 1.8;
+  }
+
+  .mst-weight {
+    font-size: 1.1em;
+    color: var(--mst-color);
+    font-family: var(--font-display);
+  }
+
+  .edge-list {
+    max-height: 160px;
+    overflow-y: auto;
+    margin-top: 6px;
+  }
+
+  .edge-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 6px;
+    margin: 2px 0;
+    font-size: 0.65em;
+    border-left: 2px solid var(--normal-color);
+    background: rgba(42,122,42,0.05);
+  }
+
+  .edge-item.in-mst {
+    border-left-color: var(--mst-color);
+    background: rgba(0,255,136,0.05);
+    color: var(--mst-color);
+  }
+
+  .edge-item.cursed {
+    border-left-color: var(--cursed-color);
+    background: rgba(255,51,51,0.05);
+    color: var(--red);
+  }
+
+  .anomaly-box {
+    font-size: 0.65em;
+    line-height: 1.7;
+    color: var(--text-dim);
+  }
+
+  .anomaly-found {
+    color: var(--red);
+    font-size: 0.75em;
+  }
+
+  .anomaly-item {
+    background: rgba(255,51,51,0.05);
+    border: 1px solid var(--red-dim);
+    padding: 8px;
+    margin-top: 6px;
+    border-left: 3px solid var(--red);
+  }
+
+  .anomaly-item .edge-id {
+    color: var(--red);
+    font-size: 1.1em;
+  }
+
+  .anomaly-item .reason {
+    color: var(--text-dim);
+    margin-top: 3px;
+    font-size: 0.9em;
+  }
+
+  .safe-report {
+    color: var(--green-bright);
+    font-size: 0.75em;
+  }
+
+  #search-result {
+    font-size: 0.65em;
+    color: var(--text-dim);
+    margin-top: 6px;
+    max-height: 100px;
+    overflow-y: auto;
+  }
+
+  #edge-tooltip {
+    position: fixed;
+    background: #0a1a0a;
+    border: 1px solid var(--green);
+    padding: 8px 12px;
+    font-size: 0.7em;
+    pointer-events: none;
+    display: none;
+    z-index: 999;
+    box-shadow: 0 0 15px var(--green-glow);
+  }
+
+  #edge-tooltip .t-row { margin: 2px 0; }
+  #edge-tooltip .t-label { color: var(--text-dim); }
+  #edge-tooltip .t-val { color: var(--gold); }
+  #edge-tooltip .t-suspicion { color: var(--red); }
+  #edge-tooltip .t-suspicion.safe { color: var(--green-bright); }
+
+  #status-bar {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    font-size: 0.6em;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  .bottom-controls {
+    grid-column: 1 / -1;
+    background: #070d07;
+    border-top: 1px solid var(--border);
+    padding: 8px 14px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    font-size: 0.65em;
+    color: var(--text-dim);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .legend-dot {
+    width: 12px;
+    height: 3px;
+    border-radius: 1px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .tag {
+    display: inline-block;
+    padding: 1px 5px;
+    font-size: 0.8em;
+    border-radius: 2px;
+  }
+  .tag.cursed { background: rgba(255,51,51,0.15); color: var(--red); border: 1px solid var(--red-dim); }
+  .tag.safe { background: rgba(76,175,80,0.1); color: var(--green-bright); border: 1px solid var(--green); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⬡ GREED ISLAND: THE SPIDER'S WEB ⬡</h1>
+  <p>PHANTOM TROUPE — NEN NETWORK ANALYSIS SYSTEM — CHALLENGE 01</p>
+</header>
+
+<div class="app">
+  <div class="canvas-container">
+    <canvas id="graphCanvas"></canvas>
+    <div id="status-bar">NODES: <span id="nodeCount">13</span> | EDGES: <span id="edgeCount">0</span> | MST EDGES: <span id="mstEdgeCount">0</span></div>
+    <div class="canvas-hint">CLICK EDGE TO INSPECT • DRAG NODES TO REPOSITION</div>
+  </div>
+
+  <div class="side-panel scrollbar-thin">
+
+    <div class="panel-section">
+      <h3>▸ Add Connection</h3>
+      <div class="form-row">
+        <label>Node A</label>
+        <input type="number" id="addA" min="1" max="13" placeholder="1-13">
+      </div>
+      <div class="form-row">
+        <label>Node B</label>
+        <input type="number" id="addB" min="1" max="13" placeholder="1-13">
+      </div>
+      <div class="form-row">
+        <label>Weight</label>
+        <input type="number" id="addW" min="1" max="20" placeholder="1-20">
+      </div>
+      <button class="btn" onclick="handleAddEdge()">[ ADD EDGE ]</button>
+    </div>
+
+    <div class="panel-section">
+      <h3>▸ Remove Connection</h3>
+      <div class="form-row">
+        <label>Edge ID</label>
+        <input type="number" id="removeId" placeholder="edge id" min="0">
+      </div>
+      <button class="btn danger" onclick="handleRemoveEdge()">[ REMOVE EDGE ]</button>
+    </div>
+
+    <div class="panel-section">
+      <h3>▸ Modify Weight</h3>
+      <div class="form-row">
+        <label>Edge ID</label>
+        <input type="number" id="updateId" placeholder="edge id" min="0">
+      </div>
+      <div class="form-row">
+        <label>New Weight</label>
+        <input type="number" id="updateW" min="1" max="20" placeholder="1-20">
+      </div>
+      <button class="btn gold" onclick="handleUpdateWeight()">[ UPDATE WEIGHT ]</button>
+    </div>
+
+
+    <div class="panel-section">
+      <h3>▸ Search Node</h3>
+      <div class="form-row">
+        <label>Node</label>
+        <input type="number" id="searchNode" min="1" max="13" placeholder="1-13">
+      </div>
+      <button class="btn" onclick="handleSearchNode()">[ SEARCH ]</button>
+      <div id="search-result"></div>
+    </div>
+
+    <div class="panel-section">
+      <h3>▸ MST State — Kruskal</h3>
+      <div class="mst-info">
+        Total Weight: <span class="mst-weight" id="mstTotalWeight">—</span>
+      </div>
+      <div class="edge-list scrollbar-thin" id="mstEdgeList"></div>
+    </div>
+
+    
+    <div class="panel-section">
+      <h3>▸ Anomaly Report</h3>
+      <div class="anomaly-box" id="anomalyReport">
+        <span style="color: var(--text-dim)">[ AWAITING DATA... ]</span>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <h3>▸ All Edges</h3>
+      <div class="edge-list scrollbar-thin" id="allEdgeList"></div>
+    </div>
+
+  </div>
+
+
+  <div class="bottom-controls">
+    <span style="color: var(--gold); font-family: var(--font-display); font-size: 1.1em;">LEGEND</span>
+    <div class="legend-item"><div class="legend-dot" style="background: var(--mst-color); height:3px"></div> MST Edge</div>
+    <div class="legend-item"><div class="legend-dot" style="background: var(--normal-color)"></div> Non-MST Edge</div>
+    <div class="legend-item"><div class="legend-dot" style="background: var(--cursed-color)"></div> Cursed / Anomalous</div>
+    <div class="legend-item"><div class="legend-dot" style="background: var(--gold); border-radius:50%; width:8px; height:8px"></div> Node</div>
+    <div style="margin-left: auto; color: var(--text-dim)">ALGORITHM: KRUSKAL + UNION-FIND | ANOMALY: NON-POSITIVE WEIGHT DETECTION</div>
+  </div>
+</div>
+
+
+<div id="edge-tooltip">
+  <div class="t-row"><span class="t-label">EDGE: </span><span class="t-val" id="tt-id">—</span></div>
+  <div class="t-row"><span class="t-label">CONNECTION: </span><span class="t-val" id="tt-nodes">—</span></div>
+  <div class="t-row"><span class="t-label">WEIGHT: </span><span class="t-val" id="tt-weight">—</span></div>
+  <div class="t-row"><span class="t-label">IN MST: </span><span class="t-val" id="tt-mst">—</span></div>
+  <div class="t-row"><span class="t-label">SUSPICION: </span><span id="tt-suspicion" class="t-suspicion">—</span></div>
+</div>
+
+<script>
+
+let graph = {
+  nodeCount: 13,
+  edges: [],
+  nextEdgeId: 0
+};
+
+let mstResult = { edges: [], totalWeight: 0 };
+let anomalies = [];
+let nodePositions = [];
+let draggingNode = null;
+let dragOffsetX = 0, dragOffsetY = 0;
+let hoveredEdge = null;
+
+const canvas = document.getElementById('graphCanvas');
+const ctx = canvas.getContext('2d');
+
+
+function addEdge(g, edge) {
+  if (edge.from < 1 || edge.from > g.nodeCount) return { ok: false, msg: `Node A must be 1–${g.nodeCount}` };
+  if (edge.to < 1 || edge.to > g.nodeCount) return { ok: false, msg: `Node B must be 1–${g.nodeCount}` };
+  if (edge.from === edge.to) return { ok: false, msg: 'Self-loops not allowed' };
+  const dup = g.edges.find(e => (e.from===edge.from&&e.to===edge.to)||(e.from===edge.to&&e.to===edge.from));
+  if (dup) return { ok: false, msg: `Edge between ${edge.from} and ${edge.to} already exists (ID ${dup.id})` };
+  
+  const e = { id: g.nextEdgeId++, from: edge.from, to: edge.to, weight: edge.weight };
+  g.edges.push(e);
+  return { ok: true, edge: e };
+}
+
+function removeEdge(g, edgeId) {
+  const idx = g.edges.findIndex(e => e.id === edgeId);
+  if (idx === -1) return { ok: false, msg: `Edge ID ${edgeId} not found` };
+  const removed = g.edges.splice(idx, 1)[0];
+  return { ok: true, edge: removed };
+}
+
+function updateWeight(g, edgeId, newWeight) {
+  const e = g.edges.find(e => e.id === edgeId);
+  if (!e) return { ok: false, msg: `Edge ID ${edgeId} not found` };
+  e.weight = newWeight;
+  return { ok: true, edge: e };
+}
+
+
+function makeUF(n) {
+  const parent = Array.from({length: n+1}, (_,i) => i);
+  const rank   = new Array(n+1).fill(0);
+  return { parent, rank };
+}
+
+function find(uf, x) {
+  if (uf.parent[x] !== x) uf.parent[x] = find(uf, uf.parent[x]);
+  return uf.parent[x];
+}
+
+function union(uf, x, y) {
+  const px = find(uf, x), py = find(uf, y);
+  if (px === py) return false;
+  if (uf.rank[px] < uf.rank[py]) uf.parent[px] = py;
+  else if (uf.rank[px] > uf.rank[py]) uf.parent[py] = px;
+  else { uf.parent[py] = px; uf.rank[px]++; }
+  return true;
+}
+
+
+function detectAnomaly(g) {
+  const found = [];
+  for (const e of g.edges) {
+    const reasons = [];
+
+    if (e.weight <= 0) reasons.push(`Weight ${e.weight} is non-positive (violates strict positivity constraint)`);
+   
+    if (e.weight > 20) reasons.push(`Weight ${e.weight} exceeds maximum allowed value of 20`);
+    if (e.weight < 1 && e.weight > 0) reasons.push(`Weight ${e.weight} is fractional — only integers 1-20 expected`);
+  
+    if (isNaN(e.weight) || typeof e.weight !== 'number') reasons.push(`Weight is not a valid number`);
+    
+    if (reasons.length > 0) {
+      found.push({ edge: e, reasons });
+    }
+  }
+  return found;
+}
+
+function getSuspicionLevel(e, anomalies) {
+  const a = anomalies.find(a => a.edge.id === e.id);
+  if (!a) return { level: 'CLEAR', cursed: false };
+  return { level: 'CURSED', cursed: true, reasons: a.reasons };
+}
+
+
+
+function computeMST(g, anomalyList) {
+  const cursedIds = new Set(anomalyList.map(a => a.edge.id));
+  
+
+  const valid = g.edges.filter(e => !cursedIds.has(e.id));
+  
+
+  const sorted = [...valid].sort((a,b) => a.weight - b.weight);
+  
+  const uf = makeUF(g.nodeCount);
+  const mstEdges = [];
+  let total = 0;
+  
+  for (const e of sorted) {
+    if (union(uf, e.from, e.to)) {
+      mstEdges.push(e);
+      total += e.weight;
+      if (mstEdges.length === g.nodeCount - 1) break;
+    }
+  }
+  
+  return { edges: mstEdges, totalWeight: total };
+}
+
+
+function recompute() {
+  anomalies = detectAnomaly(graph);
+  mstResult = computeMST(graph, anomalies);
+  updateUI();
+  render();
+}
+
+function handleAddEdge() {
+  const a = parseInt(document.getElementById('addA').value);
+  const b = parseInt(document.getElementById('addB').value);
+  const w = parseFloat(document.getElementById('addW').value);
+  
+  if (isNaN(a)||isNaN(b)||isNaN(w)) { alert('Fill all fields'); return; }
+  
+  const r = addEdge(graph, { from: a, to: b, weight: w });
+  if (!r.ok) { alert(r.msg); return; }
+  
+  document.getElementById('addA').value = '';
+  document.getElementById('addB').value = '';
+  document.getElementById('addW').value = '';
+  recompute();
+}
+
+function handleRemoveEdge() {
+  const id = parseInt(document.getElementById('removeId').value);
+  if (isNaN(id)) { alert('Enter edge ID'); return; }
+  
+  const r = removeEdge(graph, id);
+  if (!r.ok) { alert(r.msg); return; }
+  
+  document.getElementById('removeId').value = '';
+  recompute();
+}
+
+function handleUpdateWeight() {
+  const id = parseInt(document.getElementById('updateId').value);
+  const w  = parseFloat(document.getElementById('updateW').value);
+  if (isNaN(id)||isNaN(w)) { alert('Fill all fields'); return; }
+  
+  const r = updateWeight(graph, id, w);
+  if (!r.ok) { alert(r.msg); return; }
+  
+  document.getElementById('updateId').value = '';
+  document.getElementById('updateW').value = '';
+  recompute();
+}
+
+function handleSearchNode() {
+  const n = parseInt(document.getElementById('searchNode').value);
+  if (isNaN(n)||n<1||n>graph.nodeCount) { alert(`Node must be 1–${graph.nodeCount}`); return; }
+  
+  const connected = graph.edges.filter(e => e.from===n || e.to===n);
+  const el = document.getElementById('search-result');
+  
+  if (connected.length === 0) {
+    el.innerHTML = `<span style="color:var(--text-dim)">Node ${n}: no connections</span>`;
+  } else {
+    el.innerHTML = `<div style="color:var(--gold);margin-bottom:4px">NODE ${n} — ${connected.length} connection(s):</div>` +
+      connected.map(e => {
+        const other = e.from===n ? e.to : e.from;
+        const inMST = mstResult.edges.some(m => m.id === e.id);
+        const cursed = anomalies.some(a => a.edge.id === e.id);
+        const tag = cursed ? '<span class="tag cursed">CURSED</span>' : inMST ? '<span class="tag safe">MST</span>' : '';
+        return `<div class="edge-item ${inMST?'in-mst':''} ${cursed?'cursed':''}" style="margin:2px 0">
+          ID:${e.id} ↔ Node ${other} | W:${e.weight} ${tag}</div>`;
+      }).join('');
+  }
+
+  highlightedNode = n;
+  highlightedMSTEdges = new Set(
+    connected
+      .filter(e => mstResult.edges.some(m => m.id === e.id))
+      .map(e => e.id)
+  );
+  render();
+  setTimeout(() => { highlightedNode = null; highlightedMSTEdges = new Set(); render(); }, 2000);
+}
+let highlightedNode = null;
+let highlightedMSTEdges = new Set();
+
+
+function updateUI() {
+  const mstIds = new Set(mstResult.edges.map(e => e.id));
+  const cursedIds = new Set(anomalies.map(a => a.edge.id));
+  
+
+  document.getElementById('nodeCount').textContent = graph.nodeCount;
+  document.getElementById('edgeCount').textContent = graph.edges.length;
+  document.getElementById('mstEdgeCount').textContent = mstResult.edges.length;
+  
+
+  document.getElementById('mstTotalWeight').textContent =
+    mstResult.edges.length > 0 ? mstResult.totalWeight : '—';
+  
+  const mstEl = document.getElementById('mstEdgeList');
+  mstEl.innerHTML = mstResult.edges.length === 0
+    ? '<span style="color:var(--text-dim);font-size:0.75em">No MST edges yet</span>'
+    : mstResult.edges.map(e =>
+        `<div class="edge-item in-mst">ID:${e.id} | ${e.from}↔${e.to} | W:${e.weight}</div>`
+      ).join('');
+  
+  const ar = document.getElementById('anomalyReport');
+  if (anomalies.length === 0) {
+    ar.innerHTML = `<div class="safe-report">✓ ALL CLEAR — No anomalies detected.<br>Web is stable.</div>`;
+  } else {
+    ar.innerHTML = `<div class="anomaly-found">⚠ ${anomalies.length} CURSED EDGE(S) DETECTED</div>` +
+      anomalies.map(a =>
+        `<div class="anomaly-item">
+          <div class="edge-id">EDGE ID: ${a.edge.id}</div>
+          <div>${a.edge.from} ↔ ${a.edge.to} | W: ${a.edge.weight}</div>
+          ${a.reasons.map(r => `<div class="reason">• ${r}</div>`).join('')}
+          <div style="color:#554444;margin-top:3px;font-size:0.85em">→ Excluded from MST</div>
+        </div>`
+      ).join('');
+  }
+  
+  const ael = document.getElementById('allEdgeList');
+  ael.innerHTML = graph.edges.length === 0
+    ? '<span style="color:var(--text-dim);font-size:0.75em">No edges</span>'
+    : graph.edges.map(e => {
+        const inMST = mstIds.has(e.id);
+        const cursed = cursedIds.has(e.id);
+        return `<div class="edge-item ${inMST?'in-mst':''} ${cursed?'cursed':''}">
+          <span>ID:${e.id} | ${e.from}↔${e.to}</span>
+          <span>W:${e.weight} ${cursed?'⚠':inMST?'✓':''}</span>
+        </div>`;
+      }).join('');
+}
+
+function initNodePositions() {
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const r  = Math.min(cx, cy) * 0.72;
+  nodePositions = [];
+  for (let i = 1; i <= graph.nodeCount; i++) {
+    const angle = (2 * Math.PI * (i-1)) / graph.nodeCount - Math.PI/2;
+    nodePositions.push({
+      id: i,
+      x: cx + r * Math.cos(angle),
+      y: cy + r * Math.sin(angle)
+    });
+  }
+}
+
+
+const NODE_NAMES = [
+  '', 'Chrollo','Hisoka','Illumi','Feitan','Machi',
+  'Shalnark','Shizuku','Uvogin','Bonolenov','Phinks',
+  'Nobunaga','Franklin','Kortopi'
+];
+
+function render() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  
+  ctx.strokeStyle = 'rgba(26,58,26,0.18)';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+  
+  const mstIds = new Set(mstResult.edges.map(e => e.id));
+  const cursedIds = new Set(anomalies.map(a => a.edge.id));
+
+  for (const e of graph.edges) {
+    const nA = nodePositions[e.from - 1];
+    const nB = nodePositions[e.to - 1];
+    if (!nA || !nB) continue;
+    
+    const inMST  = mstIds.has(e.id);
+    const cursed = cursedIds.has(e.id);
+    const hovered = hoveredEdge && hoveredEdge.id === e.id;
+    
+    ctx.save();
+    if (cursed) {
+      ctx.strokeStyle = hovered ? '#ff6666' : '#aa2222';
+      ctx.lineWidth = hovered ? 3 : 1.5;
+      ctx.setLineDash([5, 4]);
+      if (hovered) { ctx.shadowColor='#ff3333'; ctx.shadowBlur=12; }
+    } else if (inMST || highlightedMSTEdges.has(e.id)) {
+      const isSearchHighlight = highlightedMSTEdges.has(e.id);
+      ctx.strokeStyle = isSearchHighlight ? '#c9a84c' : (hovered ? '#66ffaa' : '#00cc66');
+      ctx.lineWidth = isSearchHighlight ? 4 : (hovered ? 3.5 : 2.5);
+      ctx.setLineDash(isSearchHighlight ? [8, 4] : []);
+      if (isSearchHighlight) {
+        ctx.shadowColor = '#c9a84c';
+        ctx.shadowBlur = 20;
+      } else if (hovered) {
+        ctx.shadowColor = '#00ff88';
+        ctx.shadowBlur = 14;
+      } else {
+        ctx.shadowColor = '#00ff4466';
+        ctx.shadowBlur = 6}
+    } else {
+      ctx.strokeStyle = hovered ? '#6aaa6a' : '#1a4a2a';
+      ctx.lineWidth = hovered ? 2 : 1;
+      ctx.setLineDash([3, 3]);
+    }
+    
+    ctx.beginPath();
+    ctx.moveTo(nA.x, nA.y);
+    ctx.lineTo(nB.x, nB.y);
+    ctx.stroke();
+    ctx.restore();
+    
+    const mx = (nA.x + nB.x) / 2;
+    const my = (nA.y + nB.y) / 2;
+    ctx.save();
+    ctx.font = '10px Share Tech Mono';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    const bgColor = cursed ? 'rgba(30,5,5,0.85)' : inMST ? 'rgba(0,15,8,0.85)' : 'rgba(5,10,5,0.7)';
+    const tw = ctx.measureText(e.weight).width + 8;
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(mx - tw/2, my - 8, tw, 16);
+    ctx.fillStyle = cursed ? '#ff4444' : inMST ? '#00ff88' : '#3a6a3a';
+    ctx.fillText(e.weight, mx, my);
+    ctx.restore();
+  }
+  
+  const nodeR = 18;
+  for (const n of nodePositions) {
+    const isHighlighted = highlightedNode === n.id;
+    const hasEdges = graph.edges.some(e => e.from===n.id || e.to===n.id);
+    
+    ctx.save();
+    
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, nodeR + 4, 0, Math.PI*2);
+    if (isHighlighted) {
+      ctx.strokeStyle = '#ffcc00';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = '#ffcc00';
+      ctx.shadowBlur = 20;
+    } else {
+      ctx.strokeStyle = 'rgba(76,175,80,0.25)';
+      ctx.lineWidth = 1;
+    }
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, nodeR, 0, Math.PI*2);
+    const grad = ctx.createRadialGradient(n.x-4, n.y-4, 2, n.x, n.y, nodeR);
+    if (isHighlighted) {
+      grad.addColorStop(0, '#5a4010');
+      grad.addColorStop(1, '#2a1a00');
+    } else {
+      grad.addColorStop(0, '#1e4a2a');
+      grad.addColorStop(1, '#0a1a0e');
+    }
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.strokeStyle = isHighlighted ? '#c9a84c' : '#4caf50';
+    ctx.lineWidth = isHighlighted ? 2 : 1;
+    ctx.shadowColor = isHighlighted ? '#c9a84c44' : '#4caf5044';
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+    
+    ctx.fillStyle = isHighlighted ? '#c9a84c' : '#c8d8c8';
+    ctx.font = `bold 11px Share Tech Mono`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowBlur = 0;
+    ctx.fillText(n.id, n.x, n.y - 2);
+    
+    ctx.fillStyle = isHighlighted ? '#c9a84c88' : '#4caf5088';
+    ctx.font = '7px Share Tech Mono';
+    ctx.fillText(NODE_NAMES[n.id].slice(0,5).toUpperCase(), n.x, n.y + 8);
+    
+    ctx.restore();
+  }
+}
+
+function resizeCanvas() {
+  const container = canvas.parentElement;
+  canvas.width  = container.clientWidth;
+  canvas.height = container.clientHeight - 24;
+  initNodePositions();
+  render();
+}
+
+function getMousePos(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+function getNodeAt(x, y) {
+  for (const n of nodePositions) {
+    const dx = x - n.x, dy = y - n.y;
+    if (Math.sqrt(dx*dx + dy*dy) < 22) return n;
+  }
+  return null;
+}
+
+function getEdgeAt(x, y) {
+  const THRESHOLD = 8;
+  let best = null, bestDist = THRESHOLD;
+  for (const e of graph.edges) {
+    const nA = nodePositions[e.from - 1];
+    const nB = nodePositions[e.to - 1];
+    if (!nA || !nB) continue;
+    const dx = nB.x - nA.x, dy = nB.y - nA.y;
+    const lenSq = dx*dx + dy*dy;
+    if (lenSq === 0) continue;
+    let t = ((x - nA.x)*dx + (y - nA.y)*dy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+    const px = nA.x + t*dx, py = nA.y + t*dy;
+    const dist = Math.sqrt((x-px)**2 + (y-py)**2);
+    if (dist < bestDist) { bestDist = dist; best = e; }
+  }
+  return best;
+}
+
+canvas.addEventListener('mousedown', e => {
+  const pos = getMousePos(e);
+  const node = getNodeAt(pos.x, pos.y);
+  if (node) {
+    draggingNode = node;
+    dragOffsetX = pos.x - node.x;
+    dragOffsetY = pos.y - node.y;
+    canvas.style.cursor = 'grabbing';
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  const pos = getMousePos(e);
+  const tooltip = document.getElementById('edge-tooltip');
+  
+  if (draggingNode) {
+    draggingNode.x = pos.x - dragOffsetX;
+    draggingNode.y = pos.y - dragOffsetY;
+    render();
+    return;
+  }
+  
+  const edge = getEdgeAt(pos.x, pos.y);
+  const node = getNodeAt(pos.x, pos.y);
+  
+  if (node) {
+    canvas.style.cursor = 'grab';
+    hoveredEdge = null;
+    tooltip.style.display = 'none';
+  } else if (edge) {
+    canvas.style.cursor = 'pointer';
+    hoveredEdge = edge;
+    
+    const inMST = mstResult.edges.some(m => m.id === edge.id);
+    const susp  = getSuspicionLevel(edge, anomalies);
+    
+    document.getElementById('tt-id').textContent    = edge.id;
+    document.getElementById('tt-nodes').textContent = `${edge.from} ↔ ${edge.to}`;
+    document.getElementById('tt-weight').textContent = edge.weight;
+    document.getElementById('tt-mst').textContent   = inMST ? 'YES' : 'NO';
+    
+    const suspEl = document.getElementById('tt-suspicion');
+    suspEl.textContent = susp.level;
+    suspEl.className = susp.cursed ? 't-suspicion' : 't-suspicion safe';
+    
+    tooltip.style.display = 'block';
+    tooltip.style.left = (e.clientX + 15) + 'px';
+    tooltip.style.top  = (e.clientY - 10) + 'px';
+  } else {
+    canvas.style.cursor = 'crosshair';
+    hoveredEdge = null;
+    tooltip.style.display = 'none';
+  }
+  
+  render();
+});
+
+canvas.addEventListener('mouseup', () => {
+  draggingNode = null;
+  canvas.style.cursor = 'crosshair';
+});
+
+canvas.addEventListener('mouseleave', () => {
+  draggingNode = null;
+  hoveredEdge = null;
+  document.getElementById('edge-tooltip').style.display = 'none';
+  render();
+});
+
+
+function initSampleData() {
+  const sampleEdges = [
+    { from:1, to:2,  weight:4  },
+    { from:2, to:3,  weight:7  },
+    { from:1, to:3,  weight:9  },
+    { from:2, to:4,  weight:5  },
+    { from:3, to:5,  weight:3  },
+    { from:4, to:6,  weight:11 },
+    { from:5, to:7,  weight:2  },
+    { from:6, to:8,  weight:6  },
+    { from:7, to:9,  weight:8  },
+    { from:8, to:10, weight:15 },
+    { from:9, to:11, weight:1  },
+    { from:10,to:12, weight:13 },
+    { from:11,to:13, weight:10 },
+    { from:3, to:6,  weight:4  },
+    { from:5, to:9,  weight:12 },
+    { from:2, to:7,  weight:6  },
+    { from:4, to:8,  weight:9  },
+    { from:1, to:13, weight:16 },
+    { from:6, to:11, weight:-3 },
+  ];
+  
+  for (const e of sampleEdges) {
+    addEdge(graph, e);
+  }
+}
+
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+initSampleData();
+recompute();
+</script>
+</body>
+</html>
